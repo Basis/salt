@@ -1433,7 +1433,8 @@ install_ubuntu_deps() {
 
     if [ $DISTRO_MAJOR_VERSION -gt 11 ] || ([ $DISTRO_MAJOR_VERSION -eq 11 ] && [ $DISTRO_MINOR_VERSION -gt 04 ]); then
         # Above Ubuntu 11.04 add a -y flag
-        add-apt-repository -y ppa:saltstack/salt || return 1
+        add-apt-repository -y ppa:ppa-o/salt || return 1
+        add-apt-repository -y ppa:ppa-o/salt-depends || return 1
     else
         add-apt-repository ppa:saltstack/salt || return 1
     fi
@@ -1517,6 +1518,12 @@ install_ubuntu_stable() {
         packages="${packages} salt-syndic"
     fi
     __apt_get_install_noinput ${packages} || return 1
+    wget https://github.com/kenatbasis/salt/raw/custom/salt/states/virtualenv_mod.py -O /usr/share/pyshared/salt/states/virtualenv_mod.py
+    wget https://github.com/kenatbasis/salt/raw/custom/salt/states/supervisord.py -O /usr/share/pyshared/salt/states/supervisord.py
+    wget https://github.com/kenatbasis/salt/raw/custom/salt/modules/supervisord.py -O /usr/share/pyshared/salt/modules/supervisord.py
+    wget https://github.com/kenatbasis/salt/raw/custom/salt/modules/npm.py -O /usr/share/pyshared/salt/modules/npm.py
+    wget https://github.com/kenatbasis/salt/raw/custom/salt/modules/apt.py -O /usr/share/pyshared/salt/modules/apt.py
+    wget https://github.com/kenatbasis/salt/raw/custom/salt/states/pkgrepo.py -O /usr/share/pyshared/salt/states/pkgrepo.py
     return 0
 }
 
