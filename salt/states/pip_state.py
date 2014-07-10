@@ -109,6 +109,11 @@ def installed(name,
               cwd=None,
               activate=False,
               pre_releases=False,
+              cert=None,
+              allow_all_external=False,
+              allow_external=None,
+              allow_unverified=None,
+              process_dependency_links=False,
               __env__='base'):
     '''
     Make sure the package is installed
@@ -314,7 +319,13 @@ def installed(name,
         cwd=cwd,
         activate=activate,
         pre_releases=pre_releases,
-        __env__=__env__
+        __env__=__env__,
+        cert=cert,
+        allow_all_external=allow_all_external,
+        allow_external=allow_external,
+        allow_unverified=allow_unverified,
+        process_dependency_links=process_dependency_links,
+        saltenv=__env__
     )
 
     if pip_install_call and (pip_install_call['retcode'] == 0):
