@@ -228,7 +228,7 @@ class Pillar(object):
                         continue
                     for tgt in targets:
                         matches = []
-                        states = set()
+                        states = OrderedDict()
                         orders[env][tgt] = 0
                         for comp in ctop[env][tgt]:
                             if isinstance(comp, dict):
@@ -243,9 +243,9 @@ class Pillar(object):
                                             order = 0
                                     orders[env][tgt] = order
                             if isinstance(comp, string_types):
-                                states.add(comp)
+                                states[comp] = True
                         top[env][tgt] = matches
-                        top[env][tgt].extend(list(states))
+                        top[env][tgt].extend(list(states.keys()))
         return self.sort_top_targets(top, orders)
 
     def sort_top_targets(self, top, orders):
