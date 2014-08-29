@@ -35,7 +35,7 @@ def gen_thin(cachedir):
     thindir = os.path.join(cachedir, 'thin')
     if not os.path.isdir(thindir):
         os.makedirs(thindir)
-    thintar = os.path.join(thindir, 'thin.tgz')
+    tfp = tarfile.open(thintar, 'w:gz', dereference=True)
     thinver = os.path.join(thindir, 'version')
     salt_call = os.path.join(thindir, 'salt-call')
     with open(salt_call, 'w+') as fp_:
