@@ -166,6 +166,7 @@ def render_jinja_tmpl(tmplstr, context, tmplpath=None):
         )
         raise SaltTemplateRenderError(error)
     except jinja2.exceptions.UndefinedError:
+        print traceback.extract_tb(sys.exc_info()[2])
         line = traceback.extract_tb(sys.exc_info()[2])[-1][1]
         marker = '    <======================'
         context = get_template_context(tmplstr, line, marker=marker)
