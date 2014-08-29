@@ -9,6 +9,7 @@ import os
 import glob
 import re
 import logging
+import time
 
 # Import salt libs
 import salt.payload
@@ -96,15 +97,52 @@ class CkMinions(object):
             cdir = os.path.join(self.opts['cachedir'], 'minions')
             if not os.path.isdir(cdir):
                 return list(minions)
-            for id_ in os.listdir(cdir):
-                if id_ not in minions:
-                    continue
+            # if the minion doesn't have a cache dir, we don't want it
+            minions = minions & set(os.listdir(cdir))
+            immutable_minions = minions & set(os.listdir(cdir))
+            for id_ in immutable_minions:
                 datap = os.path.join(cdir, id_, 'data.p')
                 if not os.path.isfile(datap):
+                    # if it doesn't have a grains we don't want to try and read anything from it
+                    minions.remove(id_)
+                    logging.error('In minions.py,  %s DOESNT EXIST' % datap)
                     continue
-                grains = self.serial.load(
-                    salt.utils.fopen(datap)
-                ).get('grains')
+                # this damn file is read and written at the same time from multiple procs
+                # here's a nice little hack to handle that
+                # we are going to get the ip info if it's the last thing we do
+                counter = 0
+                while True:
+                    try:
+                        grains = self.serial.load(
+                            salt.utils.fopen(datap)
+                        ).get('grains')
+                        counter = 0
+                    except:
+                        # race condition, file was opened w+ or something
+                        time.sleep(0.1)
+                        counter += 1
+                        logging.error('In minions.py, failed to load %s' % datap)
+                        if counter == 3:
+                            # because the grains file could just be corrupt
+                            minions.remove(id_)
+                            logging.error('In minions.py, %s CORRUPT?' % datap)
+                            break
+                        continue
+
+                    # we generally only filter on role and cluster so ensure those exist
+                    if grains and grains.get('role', None) and grains.get('cluster', None):
+                        break
+                    else:
+                        if counter == 3:
+                            # because the grains file could just be corrupt
+                            minions.remove(id_)
+                            logging.error("In master.py, no ip_interfaces or "
+                                          "role, %s CORRUPT?" % datap)
+                            break
+                        logging.error("In minions.py, %s had no role or cluster"
+                                      " grain, retrying" % datap)
+                        time.sleep(0.1)
+                        counter += 1
                 if not salt.utils.subdict_match(grains, expr):
                     minions.remove(id_)
         return list(minions)
