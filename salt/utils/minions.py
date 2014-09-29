@@ -116,7 +116,6 @@ class CkMinions(object):
                         grains = self.serial.load(
                             salt.utils.fopen(datap)
                         ).get('grains')
-                        counter = 0
                     except:
                         # race condition, file was opened w+ or something
                         time.sleep(0.1)
@@ -133,7 +132,7 @@ class CkMinions(object):
                     if grains and grains.get('role', None) and grains.get('cluster', None):
                         break
                     else:
-                        if counter == 3:
+                        if counter >= 3:
                             # because the grains file could just be corrupt
                             minions.remove(id_)
                             logging.error("In master.py, no ip_interfaces or "
