@@ -102,6 +102,7 @@ class MasterPillarUtil(object):
                       'and enfore_mine_cache are both disabled.')
             return mine_data
         mdir = os.path.join(self.opts['cachedir'], 'minions')
+        '''
         try:
             for minion_id in minion_ids:
                 if not salt.utils.verify.valid_id(self.opts, minion_id):
@@ -114,6 +115,53 @@ class MasterPillarUtil(object):
                             mine_data[minion_id] = mdata
         except (OSError, IOError):
             return mine_data
+        '''
+
+        for minion_id in minion_ids:
+            if not salt.utils.verify.valid_id(self.opts, minion_id):
+                continue
+            path = os.path.join(mdir, minion_id, 'data.p')
+            if not os.path.isfile(path):
+                continue
+            # this damn file is read and written at the same time from multiple procs
+            # here's a nice little hack to handle that
+            # we are going to get the ip info if it's the last thing we do
+            counter = 0
+            while True:
+                try:
+                    mdata = self.serial.loads(salt.utils.fopen(path).read())
+                    counter = 0
+                except:
+                    # race condition, file was opened w+ or something
+                    counter += 1
+                    logging.error('In master.py, failed to load %s' % path)
+                    time.sleep(0.1)
+                    if counter == 3:
+                        # because the grains file could just be corrupt
+                        logging.error('In master.py, %s CORRUPT?' % path)
+                        break
+                    continue
+
+                # we generally just want role and ip_interfaces
+                if (mdata and isinstance(mdata, dict) and
+                        mdata.get('grains', False) and
+                        mdata['grains']['ip_interfaces'] and
+                        mdata['grains']['role']):
+                    grains[minion_id] = mdata['grains']
+                    # we don't care too much about existing pillars
+                    mine_data[minion_id] = mdata
+                    break
+                else:
+                    if counter == 3:
+                        # because the grains file could just be corrupt
+                        logging.error("In master.py, no ip_interfaces, %s "
+                                      "CORRUPT?" % path)
+                        break
+                    logging.error("In master.py, %s had no role or "
+                                  "ip_interfaces grain, retrying" % path)
+                    time.sleep(0.1)
+                    counter += 1
+
         return mine_data
 
     def _get_cached_minion_data(self, *minion_ids):
