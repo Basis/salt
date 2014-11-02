@@ -1307,10 +1307,9 @@ def mod_repo(repo, saltenv='base', **kwargs):
             # implementation via apt-add-repository.  The code path for
             # secure PPAs should be the same as urllib method
             if HAS_SOFTWAREPROPERTIES and 'ppa_auth' not in kwargs:
-                try:
-                    get_repo(repo)
+                if get_repo(repo):
                     return {repo: ''}
-                except Exception:
+                else:
                     if float(__grains__['osrelease']) < 12.04:
                         cmd = 'apt-add-repository {0}'.format(repo)
                     else:
