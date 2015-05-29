@@ -853,6 +853,8 @@ class _MMinion(object):
         # this is to break out of salt.loaded.int and make this a true singleton
         # hack until https://github.com/saltstack/salt/pull/10273 is resolved
         # this is starting to look like PHP
+        import salt.fileserver
+        import re
         global _mminions  # pylint: disable=W0601
         if '_mminions' not in globals():
             _mminions = {}
@@ -872,8 +874,15 @@ class _MMinion(object):
             # context
             m.opts['grains'] = grains
 
-            env_roots = m.opts['file_roots'][saltenv]
-            m.opts['module_dirs'] = [fp + '/_modules' for fp in env_roots]
+            fileserver = salt.fileserver.Fileserver(opts)
+            fileserver.update()
+            file_list = fileserver.file_list({'saltenv': saltenv})
+            p = re.compile('_modules/.*')
+            module_file_list = filter(p.match, file_list)
+            if module_file_list:
+                for mf in module_file_list:
+                    f = fileserver.find_file(mf, saltenv)
+                m.opts['module_dirs'] = [os.path.dirname(f['path'])]
             m.gen_modules()
             _mminions[saltenv] = m
         return _mminions[saltenv]
